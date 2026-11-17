@@ -1,0 +1,29 @@
+{% extends "base/base.html" %}
+
+{% block start %}
+<div class="container mt-2 pt-5">
+    <div class="text-center mb-5">
+        <h4>Search Results</h4>
+    </div>
+    <div class="row">
+        {% for product in products %}
+        <div class="col-md-4">
+            <figure class="card card-product-grid">
+                <div class="img-wrap">
+                    {% with img=product.product_images.first %}{% if img %}<img src="{{ img.image.url }}" alt="{{ product.product_name }}">{% endif %}{% endwith %}
+                </div>
+                <figcaption class="info-wrap border-top">
+                    <a href="{% url 'get_product' product.slug %}" class="title"> {{product.product_name}} </a>
+                    <div class="price mt-2">₹{{product.price}}.00</div>
+                </figcaption>
+            </figure>
+        </div>
+        {% endfor %}
+        {% if not products %}
+        <div class="col-12">
+            <p class="text-center">No products found matching your search criteria.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

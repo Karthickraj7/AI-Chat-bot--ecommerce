@@ -1,0 +1,166 @@
+{% extends "base/base.html" %}
+
+{% block start %}
+<section class="section-content padding-y bg">
+    {% include 'base/alert.html' %}
+    <div class="container">
+    <div class="card">
+
+        <div class="row no-gutters">
+            <aside class="col-md-6">
+                <article class="gallery-wrap">
+                    <div class="img-big-wrap">
+                        <div>
+                            {% with main=product_images.first %}{% if main %}<a href="#"><img src="{{ main.image.url }}" alt="{{ product.product_name }}"></a>{% endif %}{% endwith %}
+                        </div>
+                    </div>
+                    <div class="thumbs-wrap">
+                        {% for image in product_images %}
+                        <a href="#" class="item-thumb"> <img src="{{ image.image.url }}"></a>
+                        {% endfor %}
+                    </div>
+                </article>
+            </aside>
+            <main class="col-md-6 border-left">
+                <article class="content-body">
+                    <h2 class="title"> {{ product.product_name }} </h2>
+                    <div class="rating-wrap my-3">
+                        <ul class="rating-stars">
+                            <li style="width:80%" class="stars-active">
+                                <i class="fa fa-star"></i>
+                                <i class="fa fa-star"></i>
+                                <i class="fa fa-star"></i>
+                                <i class="fa fa-star"></i>
+                                <i class="fa fa-star"></i>
+                            </li>
+                            <li>
+                                <i class="fa fa-star"></i>
+                                <i class="fa fa-star"></i>
+                                <i class="fa fa-star"></i>
+                                <i class="fa fa-star"></i>
+                                <i class="fa fa-star"></i>
+                            </li>
+                        </ul>
+                        <small class="label-rating text-muted">132 reviews</small>
+                        <small class="label-rating text-success"> <i class="fa fa-clipboard-check"></i> 154 orders </small>
+                    </div>
+                    <div class="mb-3">
+                        <var class="price h4">
+                            {% if updated_price %}
+                                ₹{{ updated_price }}.00
+                            {% else %}
+                                ₹{{ product.price }}.00
+                            {% endif %}
+                        </var>
+                    </div>
+                    <p> {{ product.product_desc }} </p>
+                    <dl class="row">
+                        {% if product.color_variant.count %}
+                        <dt class="col-sm-3">Color</dt>
+                        <dd class="col-sm-9">
+                            <select class="form-select" onchange="get_correct_color(this.value)">
+                                <option value="" disabled selected>Select Color</option>
+                                {% for color in product.color_variant.all %}
+                                    <option value="{{ color.color }}" {% if selected_color == color.color %} selected {% endif %}>{{ color.color }}</option>
+                                {% endfor %}
+                            </select>
+                        </dd>
+                        {% endif %}
+                        <dt class="col-sm-3">Delivery</dt>
+                        <dd class="col-sm-9">USA, India and Europe </dd>
+                    </dl>
+                    <hr>
+                    <div class="form-row">
+                        <div class="form-group col-md flex-grow-0">
+                            <label>Quantity</label>
+                            <div class="input-group mb-3 input-spinner">
+                                <div class="input-group-prepend">
+                                    <button class="btn btn-light" type="button" id="button-plus"> + </button>
+                                </div>
+                                <input type="text" id="quantity-input" class="form-control" value="1">
+                                <div class="input-group-append">
+                                    <button class="btn btn-light" type="button" id="button-minus"> − </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% if product.size_variant.count %}
+                        <div class="form-group col-md">
+                            <label>Select Screen size</label>
+                            <div class="mt-1">
+                                {% for size in product.size_variant.all %}
+                                <label class="custom-control custom-radio custom-control-inline">
+                                    <input type="radio" onchange="get_correct_price(this.dataset.size)" data-size="{{ size.size }}" name="select_size" {% if selected_size == size.size %} checked {% endif %} class="custom-control-input">
+                                    <div class="custom-control-label">{{ size.size }} inch</div>
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <a href="{% url 'buy_now' product.slug %}" class="btn btn-primary buy-now-btn"> Buy now </a>
+                    <a href="{% url 'add-to-cart' product.slug %}" class="btn btn-outline-primary add-to-cart-btn">
+                        <span class="text">Add to cart</span>
+                        <i class="fas fa-shopping-cart"></i>
+                    </a>
+                </article>
+            </main>
+        </div>
+    </div>
+    </div>
+</section>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const quantityInput = document.getElementById('quantity-input');
+        const colorSelect = document.querySelector('select.form-select');
+
+        document.getElementById('button-plus').addEventListener('click', function () {
+            const v = parseInt(quantityInput.value, 10);
+            quantityInput.value = isNaN(v) ? 1 : Math.min(v + 1, 100);
+        });
+        document.getElementById('button-minus').addEventListener('click', function () {
+            const v = parseInt(quantityInput.value, 10);
+            quantityInput.value = (!isNaN(v) && v > 1) ? v - 1 : 1;
+        });
+
+        // Build the link from the current selection (color, size, quantity)
+        function buildUrl(link) {
+            const url = new URL(link.getAttribute('href'), window.location.origin);
+
+            if (colorSelect) {
+                if (!colorSelect.value) {
+                    alert("Please select a color.");
+                    return null;
+                }
+                url.searchParams.set('color_variant', colorSelect.value);
+            }
+            const size = document.querySelector('input[name="select_size"]:checked');
+            if (size && size.dataset.size) {
+                url.searchParams.set('size_variant', size.dataset.size);
+            }
+            let qty = parseInt(quantityInput.value, 10);
+            url.searchParams.set('quantity', isNaN(qty) || qty < 1 ? 1 : qty);
+            return url.toString();
+        }
+
+        ['.add-to-cart-btn', '.buy-now-btn'].forEach(function (selector) {
+            document.querySelector(selector).addEventListener('click', function (event) {
+                event.preventDefault();
+                const target = buildUrl(this);
+                if (target) window.location.href = target;
+            });
+        });
+    });
+
+    function get_correct_price(size) {
+        const urlParams = new URLSearchParams(window.location.search);
+        urlParams.set('size', size);
+        window.location.search = urlParams.toString();
+    }
+    function get_correct_color(color) {
+        const urlParams = new URLSearchParams(window.location.search);
+        urlParams.set('color', color);
+        window.location.search = urlParams.toString();
+    }
+</script>
+{% endblock %}
